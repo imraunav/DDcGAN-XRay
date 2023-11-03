@@ -146,11 +146,11 @@ def main():
     generator = nn.DataParallel(Generator()) # may need to play around with these
     disc1 = nn.DataParallel(Discriminator())
     disc2 = nn.DataParallel(Discriminator())
-    # if torch.cuda.is_available():
-    #     device = "cuda"
-    # else:
-    #     device = "cpu"
-    device = "mps"
+    if torch.cuda.is_available():
+        device = "cuda"
+    else:
+        device = "cpu"
+    # device = "mps"
     train(generator, disc1, disc2, loader, epochs, device)
 
 
