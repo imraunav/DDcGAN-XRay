@@ -76,6 +76,8 @@ class XRayDataset(Dataset):
             std_dev = max(low_crop.std(), high_crop.std())
         # print(low_crop.shape, high_crop.shape)
         # print(low_im.shape, high_im.shape)
+        low_crop = np.expand_dims(low_crop, 0)
+        high_crop = np.expand_dims(high_crop, 0)
         return low_crop.astype(np.float32), high_crop.astype(np.float32)
     
 

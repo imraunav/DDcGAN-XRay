@@ -19,7 +19,8 @@ def content_loss(real_im, gen_im):
     # may need to play around with this
     # return mse(real_im, gen_im)
     eta = hyperparameters.eta
-    return l1(real_im, gen_im) + eta * tv(real_im - gen_im)
+    # return l1(real_im, gen_im) + eta * tv(real_im - gen_im)
+    return l1(real_im, gen_im)
 
 
 def generator_loss(score):
@@ -42,16 +43,22 @@ def train(generator, disc_l, disc_h, loader, epochs, device):
 
     lr = hyperparameters.learning_rate_init
     decay_rate = hyperparameters.decay_rate
-    gen_opt = lr_scheduler.ExponentialLR(Adam(generator.parameters(), lr), decay_rate)
-    disc_l_opt = lr_scheduler.ExponentialLR(Adam(disc_l.parameters(), lr), decay_rate)
-    disc_h_opt = lr_scheduler.ExponentialLR(Adam(disc_h.parameters(), lr), decay_rate)
+    gen_opt = Adam(generator.parameters(), lr)
+    disc_l_opt = Adam(disc_l.parameters(), lr)
+    disc_h_opt = Adam(disc_h.parameters(), lr)
+    gen_opt_scheduler = lr_scheduler.ExponentialLR(gen_opt, decay_rate)
+    disc_l_opt_scheduler = lr_scheduler.ExponentialLR(disc_l_opt, decay_rate)
+    disc_h_opt_scheduler = lr_scheduler.ExponentialLR(disc_h_opt, decay_rate)
+
     L_gmax = 1000  # just a precaution
     epoch_loss = {"gen": [], "disc_l": [], "disc_h": []}
+
+    disc_l.train()
+    disc_h.train()
+    generator.train()
+    print("Training started...")
     for epoch in range(epochs):
         # set to training mode
-        disc_l.train()
-        disc_h.train()
-        generator.train()
 
         for bno, batch in enumerate(loader):
             low_imgs, high_imgs = batch
@@ -59,49 +66,53 @@ def train(generator, disc_l, disc_h, loader, epochs, device):
             low_imgs = low_imgs.to(device)
             high_imgs = high_imgs.to(device)
 
-            gen_imgs = generator(high_imgs, low_imgs)
+            gen_imgs = generator(high_imgs, low_imgs).detach()
 
             # Train Discriminators
             # discriminator low energy
+            print("Training Disc l...")
             for _ in range(hyperparameters.I_max):
+                real_labels = disc_l(low_imgs)
+                gen_labels = disc_l(gen_imgs)
+                dloss = discriminator_loss(real_labels, gen_labels)
                 disc_l_opt.zero_grad()
-                real_lables = disc_l(low_imgs)
-                gen_lables = disc_l(gen_imgs)
-                dloss = discriminator_loss(real_lables, gen_lables)
-                dloss.backwards()
+                dloss.backward()
                 disc_l_opt.step()
-                if dloss.detach() <= hyperparameters.L_max:
+                if dloss.item() <= hyperparameters.L_max:
                     break
-            epoch_loss["disc_l"].append(dloss)
+            epoch_loss["disc_l"].append(dloss.item())
 
             # discriminator high energy
+            print("Training Disc h...")
             for _ in range(hyperparameters.I_max):
+                real_labels = disc_h(high_imgs)
+                gen_labels = disc_h(gen_imgs)
+                dloss = discriminator_loss(real_labels, gen_labels)
                 disc_h_opt.zero_grad()
-                real_lables = disc_h(high_imgs)
-                gen_lables = disc_h(gen_imgs)
-                dloss = discriminator_loss(real_lables, gen_lables)
-                dloss.backwards()
+                dloss.backward()
                 disc_h_opt.step()
-                if dloss.detach() <= hyperparameters.L_max:
+                if dloss.item() <= hyperparameters.L_max:
                     break
-            epoch_loss["disc_h"].append(dloss)
+            epoch_loss["disc_h"].append(dloss.item())
 
             # Train Generator
+            print("Training Gen...")
             def generator_trianer():
                 gen_imgs = generator(high_imgs, low_imgs)
                 gen_opt.zero_grad()
                 cont_loss_l = content_loss(gen_im=gen_imgs, real_im=low_imgs)
                 cont_loss_h = content_loss(gen_im=gen_imgs, real_im=high_imgs)
-                score_l = disc_l(gen_imgs)
-                score_h = disc_h(gen_imgs)
+                score_l = disc_l(gen_imgs).detach()
+                score_h = disc_h(gen_imgs).detach()
                 gen_loss_l = generator_loss(score_l)
                 gen_loss_h = generator_loss(score_h)
                 gloss = (gen_loss_l + gen_loss_h) + hyperparameters.lam * (
                     cont_loss_l + cont_loss_h
                 )
-                gloss.backwards()
+                gloss.backward()
                 gen_opt.step()
-                return score_l.detach(), score_h.detach(), gloss.detach()
+                # print(f"Scorel: {score_l.shape}, Scoreh: {score_h.shape}, Gloss: {gloss.shape},")
+                return torch.mean(score_l).item(), torch.mean(score_h).item(), gloss.item()
 
             for _ in range(hyperparameters.I_max):
                 score_l, score_h, _ = generator_trianer()
@@ -113,7 +124,11 @@ def train(generator, disc_l, disc_h, loader, epochs, device):
                     L_gmax = 0.8 * gloss
                 if gloss < L_gmax:
                     break
-            epoch_loss["gen"].append(gloss)
+            epoch_loss["gen"].append(gloss.item())
+
+        gen_opt_scheduler.step()
+        disc_h_opt_scheduler.step()
+        disc_l_opt_scheduler.step()
 
         # checkpoint
         if (epoch + 1) % hyperparameters.checkpoint_epoch == 0:
@@ -122,8 +137,12 @@ def train(generator, disc_l, disc_h, loader, epochs, device):
             torch.save(disc_h.state_dict(), f"./weights/disc_h_epoch{epoch+1}.pt")
 
             torch.save(gen_opt.state_dict(), f"./weights/gen_opt_epoch{epoch+1}.pt")
-            torch.save(disc_l_opt.state_dict(), f"./weights/disc_l_opt_epoch{epoch+1}.pt")
-            torch.save(disc_h_opt.state_dict(), f"./weights/disc_h_opt_epoch{epoch+1}.pt")
+            torch.save(
+                disc_l_opt.state_dict(), f"./weights/disc_l_opt_epoch{epoch+1}.pt"
+            )
+            torch.save(
+                disc_h_opt.state_dict(), f"./weights/disc_h_opt_epoch{epoch+1}.pt"
+            )
             print(f"Epoch: {epoch+1}")
 
             plt.plot(epoch_loss["gen"], label="Generator loss")
@@ -143,11 +162,13 @@ def main():
 
     dataset = XRayDataset(dataset_path)
     loader = DataLoader(dataset, batch_size, shuffle=True, num_workers=num_workers)
-    generator = nn.DataParallel(Generator()) # may need to play around with these
+    generator = nn.DataParallel(Generator())  # may need to play around with these
     disc1 = nn.DataParallel(Discriminator())
     disc2 = nn.DataParallel(Discriminator())
     if torch.cuda.is_available():
         device = "cuda"
+    # elif torch.backends.mps.is_available():
+    #     device = "mps"
     else:
         device = "cpu"
     # device = "mps"

@@ -1,8 +1,8 @@
 dataset_path = "./CTP_Wires_Chargers_etc"
 batch_size = 24
-num_workers = 10 # number of cores/processes on CPU to load data
-epochs = 100
-crop_size = 64
+num_workers = 16 # number of cores/processes on CPU to load data
+epochs = 10_000
+crop_size = 84
 
 learning_rate_init = 2e-3
 lam = 0.5
