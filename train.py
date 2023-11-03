@@ -40,7 +40,7 @@ def train(generator, disc_l, disc_h, loader, epochs, device):
     disc_l.to(device)
     disc_h.to(device)
 
-    lr = hyperparameters.learning_rate
+    lr = hyperparameters.learning_rate_init
     decay_rate = hyperparameters.decay_rate
     gen_opt = lr_scheduler.ExponentialLR(Adam(generator.parameters(), lr), decay_rate)
     disc_l_opt = lr_scheduler.ExponentialLR(Adam(disc_l.parameters(), lr), decay_rate)
