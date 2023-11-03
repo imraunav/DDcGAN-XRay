@@ -78,7 +78,7 @@ class XRayDataset(Dataset):
         # print(low_im.shape, high_im.shape)
         low_crop = np.expand_dims(low_crop, 0)
         high_crop = np.expand_dims(high_crop, 0)
-        return low_crop.astype(np.float16), high_crop.astype(np.float16)
+        return low_crop.astype(np.float32), high_crop.astype(np.float32)
     
 
 class TVLoss(nn.Module):

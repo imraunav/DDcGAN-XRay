@@ -5,6 +5,8 @@ from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 import os
 import numpy as np
+from torch.cuda.amp import autocast, GradScaler
+
 
 from model import Generator, Discriminator
 from utils import XRayDataset, TVLoss
@@ -15,6 +17,7 @@ bce = nn.BCELoss()
 mse = nn.MSELoss()
 l1 = nn.L1Loss()
 tv = TVLoss
+scaler = GradScaler()
 
 
 def content_loss(real_im, gen_im):
@@ -74,7 +77,8 @@ def train(generator, disc_l, disc_h, loader, epochs, device):
             low_imgs = low_imgs.to(device)
             high_imgs = high_imgs.to(device)
 
-            gen_imgs = generator(high_imgs, low_imgs).detach()
+            with autocast(device_type=device, dtype=torch.float64):
+                gen_imgs = generator(high_imgs, low_imgs).detach()
             plt.subplot(3, 1, 1)
             plt.imshow(gen_imgs[0].to('cpu')[0], cmap='grey')
             plt.subplot(3, 1, 2)
@@ -86,12 +90,16 @@ def train(generator, disc_l, disc_h, loader, epochs, device):
             # discriminator low energy
             # print("Training Disc l...")
             for _ in range(hyperparameters.I_max):
-                real_labels = disc_l(low_imgs)
-                gen_labels = disc_l(gen_imgs)
-                dloss = discriminator_loss(real_labels, gen_labels)
+                with autocast(device_type=device, dtype=torch.float64):
+                    real_labels = disc_l(low_imgs)
+                    gen_labels = disc_l(gen_imgs)
+                    dloss = discriminator_loss(real_labels, gen_labels)
                 disc_l_opt.zero_grad()
-                dloss.backward()
-                disc_l_opt.step()
+                # dloss.backward()
+                scaler.scale(dloss).backward()
+                # disc_l_opt.step()
+                scaler.step(disc_l_opt)
+                scaler.update()
                 disc_l_runningloss.append(dloss.item())
                 print("Discriminator l loss: ", dloss.item())
                 if dloss.item() <= hyperparameters.L_max:
@@ -100,12 +108,16 @@ def train(generator, disc_l, disc_h, loader, epochs, device):
             # discriminator high energy
             # print("Training Disc h...")
             for _ in range(hyperparameters.I_max):
-                real_labels = disc_h(high_imgs)
-                gen_labels = disc_h(gen_imgs)
-                dloss = discriminator_loss(real_labels, gen_labels)
+                with autocast(device_type=device, dtype=torch.float64):
+                    real_labels = disc_h(low_imgs)
+                    gen_labels = disc_h(gen_imgs)
+                    dloss = discriminator_loss(real_labels, gen_labels)
                 disc_h_opt.zero_grad()
-                dloss.backward()
-                disc_h_opt.step()
+                # dloss.backward()
+                scaler.scale(dloss).backward()
+                # disc_h_opt.step()
+                scaler.step(disc_h_opt)
+                scaler.update()
                 disc_h_runningloss.append(dloss.item())
                 print("Discriminator h loss: ", dloss.item())
                 if dloss.item() <= hyperparameters.L_max:
@@ -114,19 +126,24 @@ def train(generator, disc_l, disc_h, loader, epochs, device):
             # Train Generator
             # print("Training Gen...")
             def generator_trianer():
-                gen_imgs = generator(high_imgs, low_imgs)
+                with autocast(device_type=device, dtype=torch.float64):
+                    gen_imgs = generator(high_imgs, low_imgs)
                 gen_opt.zero_grad()
                 cont_loss_l = content_loss(gen_im=gen_imgs, real_im=low_imgs)
                 cont_loss_h = content_loss(gen_im=gen_imgs, real_im=high_imgs)
-                score_l = disc_l(gen_imgs).detach()
-                score_h = disc_h(gen_imgs).detach()
+                with autocast(device_type=device, dtype=torch.float64):
+                    score_l = disc_l(gen_imgs).detach()
+                    score_h = disc_h(gen_imgs).detach()
                 gen_loss_l = generator_loss(score_l)
                 gen_loss_h = generator_loss(score_h)
                 gloss = (gen_loss_l + gen_loss_h) + hyperparameters.lam * (
                     cont_loss_l + cont_loss_h
                 )
-                gloss.backward()
-                gen_opt.step()
+                scaler.scale(gloss).backward()
+                # gloss.backward()
+                # gen_opt.step()
+                scaler.step(gen_opt)
+                scaler.update()
                 print("Generator loss: ", gloss.item())
                 # print(f"Scorel: {score_l.shape}, Scoreh: {score_h.shape}, Gloss: {gloss.shape},")
                 return (
