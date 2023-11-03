@@ -5,7 +5,7 @@ from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 import os
 import numpy as np
-from torch.cuda.amp import GradScaler
+# from torch.cuda.amp import GradScaler
 
 
 from model import Generator, Discriminator
@@ -17,7 +17,7 @@ bce = nn.BCELoss()
 mse = nn.MSELoss()
 l1 = nn.L1Loss()
 tv = TVLoss
-scaler = GradScaler()
+# scaler = GradScaler()
 
 
 def content_loss(real_im, gen_im):
@@ -77,8 +77,8 @@ def train(generator, disc_l, disc_h, loader, epochs, device):
             low_imgs = low_imgs.to(device)
             high_imgs = high_imgs.to(device)
 
-            with torch.autocast(device_type=device, dtype=torch.float64):
-                gen_imgs = generator(high_imgs, low_imgs).detach()
+            # with torch.autocast(device_type=device, dtype=torch.float64):
+            gen_imgs = generator(high_imgs, low_imgs).detach()
             plt.subplot(3, 1, 1)
             plt.imshow(gen_imgs[0].to('cpu')[0], cmap='grey')
             plt.subplot(3, 1, 2)
