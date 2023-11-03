@@ -83,7 +83,7 @@ def train(generator, disc_l, disc_h, loader, epochs, device):
                 disc_l_opt.zero_grad()
                 dloss.backward()
                 disc_l_opt.step()
-                disc_l_runningloss.append(dloss.item)
+                disc_l_runningloss.append(dloss.item())
                 if dloss.item() <= hyperparameters.L_max:
                     break
 
@@ -96,7 +96,7 @@ def train(generator, disc_l, disc_h, loader, epochs, device):
                 disc_h_opt.zero_grad()
                 dloss.backward()
                 disc_h_opt.step()
-                disc_h_runningloss.append(dloss.item)
+                disc_h_runningloss.append(dloss.item())
                 if dloss.item() <= hyperparameters.L_max:
                     break
 
