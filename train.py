@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from torch.optim import Adam, lr_scheduler
+from torch.optim import Adam, lr_scheduler, SGD, RMSprop
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 import os
@@ -45,9 +45,12 @@ def train(generator, disc_l, disc_h, loader, epochs, device):
 
     lr = hyperparameters.learning_rate_init
     decay_rate = hyperparameters.decay_rate
-    gen_opt = Adam(generator.parameters(), lr)
-    disc_l_opt = Adam(disc_l.parameters(), lr)
-    disc_h_opt = Adam(disc_h.parameters(), lr)
+    # gen_opt = Adam(generator.parameters(), lr)
+    # disc_l_opt = Adam(disc_l.parameters(), lr)
+    # disc_h_opt = Adam(disc_h.parameters(), lr)
+    gen_opt = RMSprop(generator.parameters(), lr)
+    disc_l_opt = SGD(disc_l.parameters(), lr)
+    disc_h_opt = SGD(disc_h.parameters(), lr)
     gen_opt_scheduler = lr_scheduler.ExponentialLR(gen_opt, decay_rate)
     disc_l_opt_scheduler = lr_scheduler.ExponentialLR(disc_l_opt, decay_rate)
     disc_h_opt_scheduler = lr_scheduler.ExponentialLR(disc_h_opt, decay_rate)
@@ -84,6 +87,7 @@ def train(generator, disc_l, disc_h, loader, epochs, device):
                 dloss.backward()
                 disc_l_opt.step()
                 disc_l_runningloss.append(dloss.item())
+                print("Discriminator l loss: ", dloss.item())
                 if dloss.item() <= hyperparameters.L_max:
                     break
 
@@ -97,6 +101,7 @@ def train(generator, disc_l, disc_h, loader, epochs, device):
                 dloss.backward()
                 disc_h_opt.step()
                 disc_h_runningloss.append(dloss.item())
+                print("Discriminator h loss: ", dloss.item())
                 if dloss.item() <= hyperparameters.L_max:
                     break
 
@@ -116,6 +121,7 @@ def train(generator, disc_l, disc_h, loader, epochs, device):
                 )
                 gloss.backward()
                 gen_opt.step()
+                print("Generator loss: ", gloss.item())
                 # print(f"Scorel: {score_l.shape}, Scoreh: {score_h.shape}, Gloss: {gloss.shape},")
                 return (
                     torch.mean(score_l).item(),
@@ -185,8 +191,8 @@ def main():
     disc2 = nn.DataParallel(Discriminator())
     if torch.cuda.is_available():
         device = "cuda"
-    # elif torch.backends.mps.is_available():
-    #     device = "mps"
+    elif torch.backends.mps.is_available():
+        device = "mps"
     else:
         device = "cpu"
     # device = "mps"
