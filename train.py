@@ -201,7 +201,6 @@ def main():
         device = "mps"
     else:
         device = "cpu"
-    device = "cpu"
     # device = "mps"
     train(generator, disc1, disc2, loader, epochs, device)
 
