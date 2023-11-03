@@ -5,7 +5,7 @@ from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 import os
 import numpy as np
-from torch.cuda.amp import autocast, GradScaler
+from torch.cuda.amp import GradScaler
 
 
 from model import Generator, Discriminator
@@ -77,7 +77,7 @@ def train(generator, disc_l, disc_h, loader, epochs, device):
             low_imgs = low_imgs.to(device)
             high_imgs = high_imgs.to(device)
 
-            with autocast(device_type=device, dtype=torch.float64):
+            with torch.autocast(device_type=device, dtype=torch.float64):
                 gen_imgs = generator(high_imgs, low_imgs).detach()
             plt.subplot(3, 1, 1)
             plt.imshow(gen_imgs[0].to('cpu')[0], cmap='grey')
@@ -90,7 +90,7 @@ def train(generator, disc_l, disc_h, loader, epochs, device):
             # discriminator low energy
             # print("Training Disc l...")
             for _ in range(hyperparameters.I_max):
-                with autocast(device_type=device, dtype=torch.float64):
+                with torch.autocast(device_type=device, dtype=torch.float64):
                     real_labels = disc_l(low_imgs)
                     gen_labels = disc_l(gen_imgs)
                     dloss = discriminator_loss(real_labels, gen_labels)
@@ -108,7 +108,7 @@ def train(generator, disc_l, disc_h, loader, epochs, device):
             # discriminator high energy
             # print("Training Disc h...")
             for _ in range(hyperparameters.I_max):
-                with autocast(device_type=device, dtype=torch.float64):
+                with torch.autocast(device_type=device, dtype=torch.float64):
                     real_labels = disc_h(low_imgs)
                     gen_labels = disc_h(gen_imgs)
                     dloss = discriminator_loss(real_labels, gen_labels)
@@ -126,12 +126,12 @@ def train(generator, disc_l, disc_h, loader, epochs, device):
             # Train Generator
             # print("Training Gen...")
             def generator_trianer():
-                with autocast(device_type=device, dtype=torch.float64):
+                with torch.autocast(device_type=device, dtype=torch.float64):
                     gen_imgs = generator(high_imgs, low_imgs)
                 gen_opt.zero_grad()
                 cont_loss_l = content_loss(gen_im=gen_imgs, real_im=low_imgs)
                 cont_loss_h = content_loss(gen_im=gen_imgs, real_im=high_imgs)
-                with autocast(device_type=device, dtype=torch.float64):
+                with torch.autocast(device_type=device, dtype=torch.float64):
                     score_l = disc_l(gen_imgs).detach()
                     score_h = disc_h(gen_imgs).detach()
                 gen_loss_l = generator_loss(score_l)
