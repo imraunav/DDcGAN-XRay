@@ -124,7 +124,7 @@ def train(generator, disc_l, disc_h, loader, epochs, device):
                     L_gmax = 0.8 * gloss
                 if gloss < L_gmax:
                     break
-            epoch_loss["gen"].append(gloss.item())
+            epoch_loss["gen"].append(gloss)
 
         gen_opt_scheduler.step()
         disc_h_opt_scheduler.step()
