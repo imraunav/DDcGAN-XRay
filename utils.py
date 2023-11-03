@@ -4,11 +4,16 @@ import os
 import cv2
 import numpy as np
 
+import hyperparameters
+
+
+def Fro_LOSS(x, y):
+    return torch.norm(x - y, 'fro')
 
 class XRayDataset(Dataset):
-    def __init__(self, path, crop_size=84):
+    def __init__(self, path):
         super().__init__()
-        self.crop_size = crop_size
+        self.crop_size = hyperparameters.crop_size
         # find all file pairs
         high_paths = []
         low_paths = []
@@ -38,6 +43,8 @@ class XRayDataset(Dataset):
         high_im = cv2.imread(high_paths, cv2.IMREAD_ANYDEPTH) / (2**16 - 1)
         h, w = low_im.shape
 
+        # simple rectification on the images when images less than the size of the crop
+        # shouldn't be much of a problem
         if h <= self.crop_size:
             # print(low_im.shape, high_im.shape)
             h = self.crop_size + 1
@@ -57,7 +64,7 @@ class XRayDataset(Dataset):
 
         # find a random crop with some details and shapes
         std_dev = 0
-        trial = 10
+        trial = hyperparameters.sample_trial
         while std_dev < 0.15 and trial > 0:
             trial -= 1  # to avoid inf loop
             x = np.random.randint(0, w - self.crop_size)
@@ -68,4 +75,4 @@ class XRayDataset(Dataset):
             std_dev = max(low_crop.std(), high_crop.std())
         # print(low_crop.shape, high_crop.shape)
         # print(low_im.shape, high_im.shape)
-        return low_crop, high_crop
+        return low_crop.astype(np.float32), high_crop.astype(np.float32)
