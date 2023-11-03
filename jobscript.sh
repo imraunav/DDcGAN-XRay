@@ -3,7 +3,7 @@
 #SBATCH -N 1 
 #SBATCH --ntasks-per-node=16 #number of cores per node
 #SBATCH --time=1-00:00:00 
-#SBATCH --job-name=LipNet  #change name of ur job
+#SBATCH --job-name=DDcGAN  #change name of ur job
 #SBATCH --output=output  #change name of ur output file
 #SBATCH --partition=gpu  #there are various partition. U can change various GPUs
 #SBATCH --gres=gpu:2 #same as above
