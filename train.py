@@ -90,16 +90,16 @@ def train(generator, disc_l, disc_h, loader, epochs, device):
             # discriminator low energy
             # print("Training Disc l...")
             for _ in range(hyperparameters.I_max):
-                with torch.autocast(device_type=device, dtype=torch.float64):
-                    real_labels = disc_l(low_imgs)
-                    gen_labels = disc_l(gen_imgs)
-                    dloss = discriminator_loss(real_labels, gen_labels)
+                # with torch.autocast(device_type=device, dtype=torch.float64):
+                real_labels = disc_l(low_imgs)
+                gen_labels = disc_l(gen_imgs)
+                dloss = discriminator_loss(real_labels, gen_labels)
                 disc_l_opt.zero_grad()
-                # dloss.backward()
-                scaler.scale(dloss).backward()
-                # disc_l_opt.step()
-                scaler.step(disc_l_opt)
-                scaler.update()
+                dloss.backward()
+                # scaler.scale(dloss).backward()
+                disc_l_opt.step()
+                # scaler.step(disc_l_opt)
+                # scaler.update()
                 disc_l_runningloss.append(dloss.item())
                 print("Discriminator l loss: ", dloss.item())
                 if dloss.item() <= hyperparameters.L_max:
@@ -108,16 +108,16 @@ def train(generator, disc_l, disc_h, loader, epochs, device):
             # discriminator high energy
             # print("Training Disc h...")
             for _ in range(hyperparameters.I_max):
-                with torch.autocast(device_type=device, dtype=torch.float64):
-                    real_labels = disc_h(low_imgs)
-                    gen_labels = disc_h(gen_imgs)
-                    dloss = discriminator_loss(real_labels, gen_labels)
+                # with torch.autocast(device_type=device, dtype=torch.float64):
+                real_labels = disc_h(low_imgs)
+                gen_labels = disc_h(gen_imgs)
+                dloss = discriminator_loss(real_labels, gen_labels)
                 disc_h_opt.zero_grad()
-                # dloss.backward()
-                scaler.scale(dloss).backward()
-                # disc_h_opt.step()
-                scaler.step(disc_h_opt)
-                scaler.update()
+                dloss.backward()
+                # scaler.scale(dloss).backward()
+                disc_h_opt.step()
+                # scaler.step(disc_h_opt)
+                # scaler.update()
                 disc_h_runningloss.append(dloss.item())
                 print("Discriminator h loss: ", dloss.item())
                 if dloss.item() <= hyperparameters.L_max:
@@ -126,24 +126,24 @@ def train(generator, disc_l, disc_h, loader, epochs, device):
             # Train Generator
             # print("Training Gen...")
             def generator_trianer():
-                with torch.autocast(device_type=device, dtype=torch.float64):
-                    gen_imgs = generator(high_imgs, low_imgs)
+                # with torch.autocast(device_type=device, dtype=torch.float64):
+                gen_imgs = generator(high_imgs, low_imgs)
                 gen_opt.zero_grad()
                 cont_loss_l = content_loss(gen_im=gen_imgs, real_im=low_imgs)
                 cont_loss_h = content_loss(gen_im=gen_imgs, real_im=high_imgs)
-                with torch.autocast(device_type=device, dtype=torch.float64):
-                    score_l = disc_l(gen_imgs).detach()
-                    score_h = disc_h(gen_imgs).detach()
+                # with torch.autocast(device_type=device, dtype=torch.float64):
+                score_l = disc_l(gen_imgs).detach()
+                score_h = disc_h(gen_imgs).detach()
                 gen_loss_l = generator_loss(score_l)
                 gen_loss_h = generator_loss(score_h)
                 gloss = (gen_loss_l + gen_loss_h) + hyperparameters.lam * (
                     cont_loss_l + cont_loss_h
                 )
-                scaler.scale(gloss).backward()
-                # gloss.backward()
-                # gen_opt.step()
-                scaler.step(gen_opt)
-                scaler.update()
+                # scaler.scale(gloss).backward()
+                gloss.backward()
+                gen_opt.step()
+                # scaler.step(gen_opt)
+                # scaler.update()
                 print("Generator loss: ", gloss.item())
                 # print(f"Scorel: {score_l.shape}, Scoreh: {score_h.shape}, Gloss: {gloss.shape},")
                 return (
