@@ -143,9 +143,9 @@ def main():
 
     dataset = XRayDataset(dataset_path)
     loader = DataLoader(dataset, batch_size, shuffle=True, num_workers=num_workers)
-    generator = Generator()
-    disc1 = Discriminator()
-    disc2 = Discriminator()
+    generator = nn.DataParallel(Generator()) # may need to play around with these
+    disc1 = nn.DataParallel(Discriminator())
+    disc2 = nn.DataParallel(Discriminator())
     # if torch.cuda.is_available():
     #     device = "cuda"
     # else:

@@ -1,6 +1,6 @@
 dataset_path = "./CTP_Wires_Chargers_etc"
 batch_size = 24
-num_workers = 8 # number of cores/processes on CPU to load data
+num_workers = 10 # number of cores/processes on CPU to load data
 epochs = 100
 crop_size = 64
 
