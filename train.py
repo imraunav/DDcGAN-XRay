@@ -3,6 +3,7 @@ from torch import nn
 from torch.optim import Adam, lr_scheduler
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
+import os
 
 from model import Generator, Discriminator
 from utils import XRayDataset, TVLoss
@@ -70,7 +71,7 @@ def train(generator, disc_l, disc_h, loader, epochs, device):
 
             # Train Discriminators
             # discriminator low energy
-            print("Training Disc l...")
+            # print("Training Disc l...")
             for _ in range(hyperparameters.I_max):
                 real_labels = disc_l(low_imgs)
                 gen_labels = disc_l(gen_imgs)
@@ -83,7 +84,7 @@ def train(generator, disc_l, disc_h, loader, epochs, device):
             epoch_loss["disc_l"].append(dloss.item())
 
             # discriminator high energy
-            print("Training Disc h...")
+            # print("Training Disc h...")
             for _ in range(hyperparameters.I_max):
                 real_labels = disc_h(high_imgs)
                 gen_labels = disc_h(gen_imgs)
@@ -96,7 +97,7 @@ def train(generator, disc_l, disc_h, loader, epochs, device):
             epoch_loss["disc_h"].append(dloss.item())
 
             # Train Generator
-            print("Training Gen...")
+            # print("Training Gen...")
             def generator_trianer():
                 gen_imgs = generator(high_imgs, low_imgs)
                 gen_opt.zero_grad()
@@ -132,6 +133,8 @@ def train(generator, disc_l, disc_h, loader, epochs, device):
 
         # checkpoint
         if (epoch + 1) % hyperparameters.checkpoint_epoch == 0:
+            if not os.path.exists('./weights'):
+                os.mkdir('./weights')
             torch.save(generator.state_dict(), f"./weights/generator_epoch{epoch+1}.pt")
             torch.save(disc_l.state_dict(), f"./weights/disc_l_epoch{epoch+1}.pt")
             torch.save(disc_h.state_dict(), f"./weights/disc_h_epoch{epoch+1}.pt")
@@ -145,6 +148,8 @@ def train(generator, disc_l, disc_h, loader, epochs, device):
             )
             print(f"Epoch: {epoch+1}")
 
+            if not os.path.exists('./checkpoints'):
+                os.mkdir('./checkpoints')
             plt.plot(epoch_loss["gen"], label="Generator loss")
             plt.plot(epoch_loss["disc_l"], label="Disc_l loss")
             plt.plot(epoch_loss["disc_h"], label="Disc_h loss")
