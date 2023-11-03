@@ -138,6 +138,7 @@ def train(generator, disc_l, disc_h, loader, epochs, device):
             epoch_loss["disc_l"].append(np.mean(disc_l_runningloss))
             epoch_loss["disc_h"].append(np.mean(disc_h_runningloss))
             epoch_loss["gen"].append(np.mean(gen_runningloss))
+            print(epoch_loss)
 
         gen_opt_scheduler.step()
         disc_h_opt_scheduler.step()
