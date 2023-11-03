@@ -81,7 +81,7 @@ def train(generator, disc_l, disc_h, loader, epochs, device):
                 disc_l_opt.step()
                 if dloss.item() <= hyperparameters.L_max:
                     break
-            epoch_loss["disc_l"].append(dloss.item())
+            epoch_loss["disc_l"].append(int(dloss.item()))
 
             # discriminator high energy
             # print("Training Disc h...")
@@ -94,7 +94,7 @@ def train(generator, disc_l, disc_h, loader, epochs, device):
                 disc_h_opt.step()
                 if dloss.item() <= hyperparameters.L_max:
                     break
-            epoch_loss["disc_h"].append(dloss.item())
+            epoch_loss["disc_h"].append(int(dloss.item()))
 
             # Train Generator
             # print("Training Gen...")
@@ -125,7 +125,7 @@ def train(generator, disc_l, disc_h, loader, epochs, device):
                     L_gmax = 0.8 * gloss
                 if gloss < L_gmax:
                     break
-            epoch_loss["gen"].append(gloss)
+            epoch_loss["gen"].append(int(gloss[0]))
 
         gen_opt_scheduler.step()
         disc_h_opt_scheduler.step()
