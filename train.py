@@ -85,7 +85,7 @@ def train(generator, disc_l, disc_h, loader, epochs, device):
             plt.imshow(low_imgs[0].to('cpu')[0], cmap='grey')
             plt.subplot(3, 1, 3)
             plt.imshow(high_imgs[0].to('cpu')[0], cmap='grey')
-            plt.savefig('./sample_gen.png')
+            plt.savefig(f'./sample_gen{epoch%5}.png')
             # Train Discriminators
             # discriminator low energy
             # print("Training Disc l...")
@@ -192,11 +192,11 @@ def train(generator, disc_l, disc_h, loader, epochs, device):
 
             if not os.path.exists("./checkpoints"):
                 os.mkdir("./checkpoints")
-            plt.plot(epoch_loss["gen"], label="Generator loss")
-            plt.plot(epoch_loss["disc_l"], label="Disc_l loss")
-            plt.plot(epoch_loss["disc_h"], label="Disc_h loss")
-            plt.legend()
-            plt.savefig("./checkpoints/loss_plot.png")
+            # plt.plot(epoch_loss["gen"], label="Generator loss")
+            # plt.plot(epoch_loss["disc_l"], label="Disc_l loss")
+            # plt.plot(epoch_loss["disc_h"], label="Disc_h loss")
+            # plt.legend()
+            # plt.savefig("./checkpoints/loss_plot.png")
 
             # print(low.shape, high.shape)
 
