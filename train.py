@@ -4,6 +4,7 @@ from torch.optim import Adam, lr_scheduler
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 import os
+import numpy as np
 
 from model import Generator, Discriminator
 from utils import XRayDataset, TVLoss
@@ -60,6 +61,9 @@ def train(generator, disc_l, disc_h, loader, epochs, device):
     print("Training started...")
     for epoch in range(epochs):
         # set to training mode
+        disc_l_runningloss = []
+        disc_h_runningloss = []
+        gen_runningloss = []
 
         for bno, batch in enumerate(loader):
             low_imgs, high_imgs = batch
@@ -79,9 +83,9 @@ def train(generator, disc_l, disc_h, loader, epochs, device):
                 disc_l_opt.zero_grad()
                 dloss.backward()
                 disc_l_opt.step()
+                disc_l_runningloss.append(dloss.item)
                 if dloss.item() <= hyperparameters.L_max:
                     break
-            epoch_loss["disc_l"].append(dloss.item())
 
             # discriminator high energy
             # print("Training Disc h...")
@@ -92,9 +96,9 @@ def train(generator, disc_l, disc_h, loader, epochs, device):
                 disc_h_opt.zero_grad()
                 dloss.backward()
                 disc_h_opt.step()
+                disc_h_runningloss.append(dloss.item)
                 if dloss.item() <= hyperparameters.L_max:
                     break
-            epoch_loss["disc_h"].append(dloss.item())
 
             # Train Generator
             # print("Training Gen...")
@@ -113,19 +117,27 @@ def train(generator, disc_l, disc_h, loader, epochs, device):
                 gloss.backward()
                 gen_opt.step()
                 # print(f"Scorel: {score_l.shape}, Scoreh: {score_h.shape}, Gloss: {gloss.shape},")
-                return torch.mean(score_l).item(), torch.mean(score_h).item(), gloss.item()
+                return (
+                    torch.mean(score_l).item(),
+                    torch.mean(score_h).item(),
+                    gloss.item(),
+                )
 
             for _ in range(hyperparameters.I_max):
-                score_l, score_h, _ = generator_trianer()
+                score_l, score_h, gloss = generator_trianer()
+                gen_runningloss.append(gloss)
                 if score_l >= hyperparameters.L_min or score_h >= hyperparameters.L_min:
                     break
             for _ in range(hyperparameters.I_max):
                 _, _, gloss = generator_trianer()
+                gen_runningloss.append(gloss)
                 if epoch == 0 and bno == 0:  # first loss count
                     L_gmax = 0.8 * gloss
                 if gloss < L_gmax:
                     break
-            epoch_loss["gen"].append(gloss)
+            epoch_loss["disc_l"].append(np.mean(disc_l_runningloss))
+            epoch_loss["disc_h"].append(np.mean(disc_h_runningloss))
+            epoch_loss["gen"].append(np.mean(gen_runningloss))
 
         gen_opt_scheduler.step()
         disc_h_opt_scheduler.step()
@@ -133,8 +145,8 @@ def train(generator, disc_l, disc_h, loader, epochs, device):
 
         # checkpoint
         if (epoch + 1) % hyperparameters.checkpoint_epoch == 0:
-            if not os.path.exists('./weights'):
-                os.mkdir('./weights')
+            if not os.path.exists("./weights"):
+                os.mkdir("./weights")
             torch.save(generator.state_dict(), f"./weights/generator_epoch{epoch+1}.pt")
             torch.save(disc_l.state_dict(), f"./weights/disc_l_epoch{epoch+1}.pt")
             torch.save(disc_h.state_dict(), f"./weights/disc_h_epoch{epoch+1}.pt")
@@ -148,8 +160,8 @@ def train(generator, disc_l, disc_h, loader, epochs, device):
             )
             print(f"Epoch: {epoch+1}")
 
-            if not os.path.exists('./checkpoints'):
-                os.mkdir('./checkpoints')
+            if not os.path.exists("./checkpoints"):
+                os.mkdir("./checkpoints")
             plt.plot(epoch_loss["gen"], label="Generator loss")
             plt.plot(epoch_loss["disc_l"], label="Disc_l loss")
             plt.plot(epoch_loss["disc_h"], label="Disc_h loss")
