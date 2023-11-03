@@ -45,12 +45,12 @@ def train(generator, disc_l, disc_h, loader, epochs, device):
 
     lr = hyperparameters.learning_rate_init
     decay_rate = hyperparameters.decay_rate
-    # gen_opt = Adam(generator.parameters(), lr)
-    # disc_l_opt = Adam(disc_l.parameters(), lr)
-    # disc_h_opt = Adam(disc_h.parameters(), lr)
-    gen_opt = RMSprop(generator.parameters(), lr)
-    disc_l_opt = SGD(disc_l.parameters(), lr)
-    disc_h_opt = SGD(disc_h.parameters(), lr)
+    gen_opt = Adam(generator.parameters(), lr)
+    disc_l_opt = Adam(disc_l.parameters(), lr)
+    disc_h_opt = Adam(disc_h.parameters(), lr)
+    # gen_opt = RMSprop(generator.parameters(), lr)
+    # disc_l_opt = SGD(disc_l.parameters(), lr)
+    # disc_h_opt = SGD(disc_h.parameters(), lr)
     gen_opt_scheduler = lr_scheduler.ExponentialLR(gen_opt, decay_rate)
     disc_l_opt_scheduler = lr_scheduler.ExponentialLR(disc_l_opt, decay_rate)
     disc_h_opt_scheduler = lr_scheduler.ExponentialLR(disc_h_opt, decay_rate)
@@ -75,7 +75,13 @@ def train(generator, disc_l, disc_h, loader, epochs, device):
             high_imgs = high_imgs.to(device)
 
             gen_imgs = generator(high_imgs, low_imgs).detach()
-
+            plt.subplot(3, 1, 1)
+            plt.imshow(gen_imgs[0].to('cpu')[0], cmap='grey')
+            plt.subplot(3, 1, 2)
+            plt.imshow(low_imgs[0].to('cpu')[0], cmap='grey')
+            plt.subplot(3, 1, 3)
+            plt.imshow(high_imgs[0].to('cpu')[0], cmap='grey')
+            plt.savefig('./sample_gen.png')
             # Train Discriminators
             # discriminator low energy
             # print("Training Disc l...")
@@ -186,15 +192,16 @@ def main():
 
     dataset = XRayDataset(dataset_path)
     loader = DataLoader(dataset, batch_size, shuffle=True, num_workers=num_workers)
-    generator = nn.DataParallel(Generator())  # may need to play around with these
-    disc1 = nn.DataParallel(Discriminator())
-    disc2 = nn.DataParallel(Discriminator())
+    generator = Generator()  # may need to play around with these
+    disc1 = Discriminator()
+    disc2 = Discriminator()
     if torch.cuda.is_available():
         device = "cuda"
     elif torch.backends.mps.is_available():
         device = "mps"
     else:
         device = "cpu"
+    device = "cpu"
     # device = "mps"
     train(generator, disc1, disc2, loader, epochs, device)
 
