@@ -68,7 +68,7 @@ class TrainerDDP:
         self.disc_l_opt = optim.Adam(disc_l.parameters(), self.lr)
         self.disc_h_opt = optim.Adam(disc_h.parameters(), self.lr)
 
-        self.gen_opt_scheduler = optim.lr_scheduler.ExponentialLR(self.self.gen_opt, self.decay_rate)
+        self.gen_opt_scheduler = optim.lr_scheduler.ExponentialLR(self.gen_opt, self.decay_rate)
         self.disc_l_opt_scheduler = optim.lr_scheduler.ExponentialLR(
             self.disc_l_opt, self.decay_rate
         )
