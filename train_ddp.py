@@ -49,7 +49,6 @@ class TrainerDDP:
         sampler_train: DistributedSampler,
     ) -> None:
         print("Initializing trainer on GPU:", gpu_id)
-        # https://discuss.pytorch.org/t/extra-10gb-memory-on-gpu-0-in-ddp-tutorial/118113
         torch.cuda.set_device(gpu_id)  # master gpu takes up extra memory
         torch.cuda.empty_cache()
 
@@ -68,7 +67,9 @@ class TrainerDDP:
         self.disc_l_opt = optim.Adam(disc_l.parameters(), self.lr)
         self.disc_h_opt = optim.Adam(disc_h.parameters(), self.lr)
 
-        self.gen_opt_scheduler = optim.lr_scheduler.ExponentialLR(self.gen_opt, self.decay_rate)
+        self.gen_opt_scheduler = optim.lr_scheduler.ExponentialLR(
+            self.gen_opt, self.decay_rate
+        )
         self.disc_l_opt_scheduler = optim.lr_scheduler.ExponentialLR(
             self.disc_l_opt, self.decay_rate
         )
@@ -122,7 +123,6 @@ class TrainerDDP:
             disc_l_runningloss = []
             disc_h_runningloss = []
             gen_runningloss = []
-            # https://pytorch.org/docs/stable/data.html#torch.utils.data.distributed.DistributedSampler
             self.sampler_train.set_epoch(epoch)
             for bno, batch in enumerate(self.trainloader):
                 low_imgs, high_imgs = batch
