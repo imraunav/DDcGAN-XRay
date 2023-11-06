@@ -54,7 +54,6 @@ class TrainerDDP:
         torch.cuda.empty_cache()
 
         self.gpu_id = gpu_id
-        print(f"Initializing trainer on GPU {gpu_id}")
         self.generator = DDP(generator, device_ids=[gpu_id], output_device=gpu_id)
         self.disc_l = DDP(disc_l, device_ids=[gpu_id], output_device=gpu_id)
         self.disc_h = DDP(disc_h, device_ids=[gpu_id], output_device=gpu_id)
@@ -65,16 +64,16 @@ class TrainerDDP:
 
         self.lr = hyperparameters.learning_rate_init
         self.decay_rate = hyperparameters.decay_rate
-        gen_opt = optim.Adam(generator.parameters(), self.lr)
-        disc_l_opt = optim.Adam(disc_l.parameters(), self.lr)
-        disc_h_opt = optim.Adam(disc_h.parameters(), self.lr)
+        self.gen_opt = optim.Adam(generator.parameters(), self.lr)
+        self.disc_l_opt = optim.Adam(disc_l.parameters(), self.lr)
+        self.disc_h_opt = optim.Adam(disc_h.parameters(), self.lr)
 
-        gen_opt_scheduler = optim.lr_scheduler.ExponentialLR(gen_opt, self.decay_rate)
-        disc_l_opt_scheduler = optim.lr_scheduler.ExponentialLR(
-            disc_l_opt, self.decay_rate
+        self.gen_opt_scheduler = optim.lr_scheduler.ExponentialLR(self.self.gen_opt, self.decay_rate)
+        self.disc_l_opt_scheduler = optim.lr_scheduler.ExponentialLR(
+            self.disc_l_opt, self.decay_rate
         )
-        disc_h_opt_scheduler = optim.lr_scheduler.ExponentialLR(
-            disc_h_opt, self.decay_rate
+        self.disc_h_opt_scheduler = optim.lr_scheduler.ExponentialLR(
+            self.disc_h_opt, self.decay_rate
         )
 
         self.bce = nn.BCELoss()
