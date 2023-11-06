@@ -4,10 +4,10 @@ num_workers = 16  # number of cores/processes on CPU to load data
 epochs = 2
 crop_size = 84
 
-learning_rate_init = 0.8
+learning_rate_init = 5
 lam = 0.5
 eta = 1.2
-decay_rate = 0.005
+decay_rate = 0.0005
 
 I_max = 20  # max steps to train the network
 L_max = 1.8
