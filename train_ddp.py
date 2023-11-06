@@ -111,7 +111,7 @@ class TrainerDDP:
         model_path = f"./weights/disc_h_{epoch}.pt"
         torch.save(ckp, model_path)
 
-    def train(self, max_epochs: int):
+    def train(self, epochs: int):
         self.disc_l.train()
         self.disc_h.train()
         self.generator.train()
@@ -119,7 +119,7 @@ class TrainerDDP:
         L_gmax = 1000  # just a precaution
         epoch_loss = {"gen": [], "disc_l": [], "disc_h": []}
 
-        for epoch in range(max_epochs):
+        for epoch in range(epochs):
             disc_l_runningloss = []
             disc_h_runningloss = []
             gen_runningloss = []
@@ -258,7 +258,7 @@ class TrainerDDP:
             if self.gpu_id == 0 and epoch % hyperparameters.save_every == 0:
                 self._save_checkpoint(epoch)
         # save last epoch
-        self._save_checkpoint(max_epochs - 1)
+        self._save_checkpoint(epochs - 1)
 
 
 def main(rank, world_size):
@@ -280,7 +280,7 @@ def main(rank, world_size):
         trainloader=train_dataloader,
         sampler_train=train_sampler,
     )
-    trainer.train(hyperparameters.max_epoch)
+    trainer.train(hyperparameters.epochs)
     destroy_process_group()  # clean up
 
 
